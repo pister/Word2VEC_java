@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.ansj.vec.util.LearnListener;
 import com.ansj.vec.util.MapCount;
 
 import com.ansj.vec.domain.HiddenNeuron;
@@ -21,7 +22,7 @@ public class Learn {
     /**
      * 训练多少个特征
      */
-    private int layerSize = 100;
+    private int layerSize = 200;
 
     /**
      * 上下文窗口大小
@@ -41,6 +42,8 @@ public class Learn {
     private int trainWordsCount = 0;
 
     private int MAX_EXP = 6;
+
+    private LearnListener learnListener;
 
     public Learn(Boolean isCbow, Integer layerSize, Integer window, Double alpha, Double sample) {
         createExpTable();
@@ -83,9 +86,9 @@ public class Learn {
                         alpha = startingAlpha * 0.0001;
                     }
                 }
-                String[] strs = temp.split(" ");
+                String[] strs = temp.split("\\s+");
                 wordCount += strs.length;
-                List<WordNeuron> sentence = new ArrayList<WordNeuron>();
+                List<WordNeuron> sentence = new ArrayList<WordNeuron>(strs.length);
                 for (int i = 0; i < strs.length; i++) {
                     Neuron entry = wordMap.get(strs[i]);
                     if (entry == null) {
@@ -109,6 +112,12 @@ public class Learn {
                         cbowGram(index, sentence, (int) nextRandom % window);
                     } else {
                         skipGram(index, sentence, (int) nextRandom % window);
+                    }
+                }
+
+                if (learnListener != null) {
+                    if (wordCount > 0 && wordCount % 100000 == 0) {
+                        learnListener.onTrainingMode(wordCount);
                     }
                 }
 
@@ -258,10 +267,15 @@ public class Learn {
             wordReader = new WordReader(new InputStreamReader(new FileInputStream(file)));
             String temp;
             while ((temp = wordReader.readNext()) != null) {
-                String[] split = temp.split(" ");
+                String[] split = temp.split("\\s+");
                 trainWordsCount += split.length;
                 for (String string : split) {
                     mc.add(string);
+                }
+                if (learnListener != null) {
+                    if (trainWordsCount > 0 && trainWordsCount % 100000 == 0) {
+                        learnListener.onProcessingWordFreq(trainWordsCount);
+                    }
                 }
             }
         } finally {
@@ -294,10 +308,16 @@ public class Learn {
     public void learnFile(File file) throws IOException {
         readVocab(file);
         new Haffman(layerSize).make(wordMap.values());
-        
+
+        int  neuronCount = 0;
         //查找每个神经元
         for (Neuron neuron : wordMap.values()) {
             ((WordNeuron)neuron).makeNeurons() ;
+            if (learnListener != null) {
+                if (neuronCount > 0 && neuronCount % 100000 == 0) {
+                    learnListener.onMakingNeuron(neuronCount);
+                }
+            }
         }
         
         trainModel(file);
@@ -369,4 +389,11 @@ public class Learn {
         this.isCbow = isCbow;
     }
 
+    public LearnListener getLearnListener() {
+        return learnListener;
+    }
+
+    public void setLearnListener(LearnListener learnListener) {
+        this.learnListener = learnListener;
+    }
 }

@@ -1,5 +1,6 @@
 package com.ansj.vec;
 
+import com.ansj.vec.util.LearnListener;
 import junit.framework.TestCase;
 
 import java.io.File;
@@ -13,13 +14,31 @@ import java.io.IOException;
 public class LearnTest extends TestCase {
 
     public void testLearn() throws IOException {
-        String path = "/Users/huangsongli/temp/learn/out.txt";
-        String input = "/Users/huangsongli/work/open-source/third-projects/Word2VEC_java/src/test/resources/text8";
+        String input = "/Users/huangsongli/work/open-source/resources/nlp/news2_deal.txt";
+        String output = "/Users/huangsongli/work/open-source/resources/nlp/news2_out_java.bin";
         Learn learn = new Learn();
+        learn.setLearnListener(new LearnListener() {
+            @Override
+            public void onProcessingWordFreq(int processedCount) {
+                System.out.println("processedCount: " + processedCount);
+            }
+
+            @Override
+            public void onMakingNeuron(int neuronMadeCount) {
+                System.out.println("neuronMadeCount: " + neuronMadeCount);
+
+            }
+
+            @Override
+            public void onTrainingMode(int modeTrainedCount) {
+                System.out.println("modeTrainedCount: " + modeTrainedCount);
+
+            }
+        });
         long start = System.currentTimeMillis() ;
         learn.learnFile(new File(input));
         System.out.println("use time "+(System.currentTimeMillis()-start));
-        learn.saveModel(new File(path));
+        learn.saveModel(new File(output));
 
     }
 

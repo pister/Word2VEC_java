@@ -47,6 +47,7 @@ public class WordReader implements Closeable {
             }
             int strLength = charBuffer.length();
             String token = charBuffer.getString();
+            token = token.trim();
             charBuffer.reset();
             if (status == CharStatus.END) {
                 return token;
